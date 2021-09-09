@@ -1,5 +1,6 @@
-import {Task} from "./Task";
-import {Interval} from "./Interval";
+import { LifeCycle } from "./LifeCycle";
+import { Task }      from "./Task";
+import { Interval }  from "./Interval";
 
 /**
  * 可以添加多个任务，分别起始于不同的时间点，任务的开始，暂停等状态由时间线控制
@@ -11,152 +12,107 @@ import {Interval} from "./Interval";
  * 默认任务的起始时间和结束时间与时间线时长保持一致。
  * 在未手动设置时间线时长的时候，时间线时长以最长的任务为准
  */
-export class TimeLine {
-    private _startTimeStamp;
-    private _endTimeStamp;
-    private _progress;
-    private _isRunning;
-    private _onStartCallBack: CallBack;
-    private _onStopCallBack: CallBack;
-    private _onEndCallBack: CallBack;
-    private _onPauseCallBack: CallBack;
-    private _onResumeCallBack: CallBack;
-    private _onUpdateCallBack: CallBack;
-    private _onDestroyCallBack: CallBack;
-    private _allTaskList: Map<Task, Interval> = new Map();
-    private _useTaskList: Set<Task> = new Set();
+export class TimeLine extends LifeCycle {
+    private _startTimeStamp; // 内部调用，开始时间
+    private _endTimeStamp; // 内部使用，结束时间，根据_startTimeStamp和_duration计算出
+    private _progress;// 播放进度
+    private _duration = 0;
+    private _allTaskList: Map<Task , Interval> = new Map();
+    private _useTaskList: Map<Task , number> = new Map();
     private _isSetDuration; // 是否手动设置了duration
-    private autoStart;
-    private _duration = 1000;
     
-    speed = 1; // 播放速度，更改此项会影响时间线内所有的任务
-    setDuration(value) {
-        this.duration = value;
-        this._isSetDuration = true;
-    }
+    public speed = 1; // 播放速度，更改此项会影响时间线内所有的任务
+    public autoStart = false;
     
-    set duration(value) {
+    private set duration( value ) {
         this._duration = value;
-        this._allTaskList.forEach(interval => interval.setEndTime(value));
+        this._allTaskList.forEach( interval => interval.setEndTime( value ) );
     }
     
-    get duration() {
+    public get duration() {
         return this._duration;
     }
     
-    /**
-     * 启动时间线
-     */
-    start(time) {
-        this._startTimeStamp = time;
-        this._isRunning = true;
+    public setDuration( value ) {
+        this.duration = value;
+        this._isSetDuration = true;
+        return this;
     }
     
-    /**
-     * 停止时间线
-     */
-    stop() {
-        this._isRunning = true;
+    protected _start( timestamp: number ): void {
+        this._startTimeStamp = timestamp;
     }
     
-    /**
-     * 直接跳到时间线结束状态
-     */
-    end() {
-        this.update(Infinity, Infinity);
-        this._isRunning = true;
+    protected _pause( ...arg: any[] ): void {
     }
     
-    /**
-     * 暂停时间线
-     */
-    pause() {
-        this._isRunning = false;
+    protected _resume( ...arg: any[] ): void {
     }
     
-    /**
-     * 重启时间线
-     */
-    resume() {
-        this._isRunning = true;
+    protected _end( ...arg: any[] ): void {
     }
     
-    /**
-     * 更新时间线
-     */
-    update(time: number, deltaTime: number) {
-        // 如果不在运行状态，且不是自动开始的动画，则直接返回，否则自动开始
-        if (!this._isRunning) {
-            if (!this.autoStart) return;
-            this.start(time);
+    protected _stop( ...arg: any[] ): void {
+    }
+    
+    public _update( time , deltaTime ): void {
+        if ( !this.isRunning() ) {
+            if ( !this.isInitial() || !this.autoStart ) return;
+            this.start( time );
         }
-        const {_useTaskList, _allTaskList, _startTimeStamp, duration, speed} = this;
+        const { _useTaskList , _allTaskList , _startTimeStamp , duration , speed } = this;
         const durationTime = time - _startTimeStamp;
-        if (durationTime > duration) this.end();
+        if ( durationTime > duration ) this.end();
         // 遍历当前的任务栈，找出当前时间点应该运行的任务
         _useTaskList.clear();
-        _allTaskList.forEach((interval, task) => {
-            if (interval.include(durationTime)) {
-                _useTaskList.add(task);
+        _allTaskList.forEach( ( interval , task ) => {
+            if ( interval.include( durationTime ) ) {
+                _useTaskList.set( task , interval.getTime( durationTime ) );
             }
-        });
+        } );
         // 运行每个任务，结束执行回调函数
-        _useTaskList.forEach(task => task.update(durationTime / speed, deltaTime / speed));
-        if (this._onUpdateCallBack) this._onUpdateCallBack();
+        _useTaskList.forEach( ( value , task ) => task.update( value / speed , deltaTime / speed ) );
+    }
+    
+    public _destroy( ...arg: any[] ): void {
     }
     
     /**
-     * 添加任务
+     *
+     * @param task
+     * @param intervals
      */
-    add(task, taskConfig: TaskConfig) {
-        if (!this._isSetDuration) {
-            const {intervals} = taskConfig;
-            if (intervals.length % 2 !== 1) {
-                const end = intervals[intervals.length - 1];
-                if (end > this.duration) {
-                    this.duration = end;
-                }
+    add( task: object , intervals: number[] ) {
+        if ( !this._isSetDuration ) {
+            const end = intervals[ intervals.length - 1 ];
+            if ( end > this.duration ) {
+                this.duration = end;
             }
         }
-        this._allTaskList.add(new Task(task, taskConfig));
+        this._allTaskList.set( new Task( task ) , new Interval( intervals , this.duration ) );
     }
     
-    onStart(func: CallBack) {
-        this._onStartCallBack = func;
-        return this;
-    }
-    
-    onStop(func: CallBack) {
-        this._onStopCallBack = func;
-        return this;
-    }
-    
-    onEnd(func: CallBack) {
-        this._onEndCallBack = func;
-        return this;
-    }
-    
-    onPause(func: CallBack) {
-        this._onPauseCallBack = func;
-        return this;
-    }
-    
-    onResume(func: CallBack) {
-        this._onResumeCallBack = func;
-        return this;
-    }
-    
-    onUpdate(func: CallBack) {
-        this._onUpdateCallBack = func;
-        return this;
-    }
-    
-    onDestroy(func: CallBack) {
-        this._onDestroyCallBack = func;
-        return this;
-    }
 }
 
 const timeLine = new TimeLine();
-timeLine.start(100);
+const obj1 = {
+    name : 'task1' ,
+    update : function ( time ) {
+        console.log( this.name , time );
+    }
+};
+const obj2 = {
+    name : 'task2' ,
+    update : function ( time ) {
+        console.log( this.name , time );
+    }
+};
+timeLine.add( obj1 as any , [ 0 , 100 , 200 , 500 ] );
+timeLine.add( <any> obj2 , [ 200 , 400 ] );
 
+let timestamp = 0;
+timeLine.autoStart = true;
+setInterval( () => {
+    timestamp += 100;
+    timeLine.update( timestamp , 100 );
+} , 100 );

@@ -8,7 +8,7 @@ export class Task {
     private readonly _runTask;
     private readonly intervals;
     
-    constructor(task, taskConfig: TaskConfig) {
+    constructor( task ) {
         this._runTask = task;
     }
     
@@ -30,12 +30,6 @@ export class Task {
     }
     
     update(time: number, deltaTime: number) {
-    
-    }
-    
-    // 判断该时间是否为任务运行时间
-    match(time): boolean {
-        
-        return true;
+        this._runTask.update( time , deltaTime );
     }
 }

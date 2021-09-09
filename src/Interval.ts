@@ -1,7 +1,4 @@
-const format = (arr, end) => {
-    if (arr.length % 2 !== 0) {
-        arr.push(end);
-    }
+const format = (arr) => {
     const re = [];
     let i = 0;
     while (i < arr.length) {
@@ -33,7 +30,12 @@ export class Interval {
     private readonly intervals:[number,number][];
     
     constructor(intervals, endTime) {
-        this.intervals = format(intervals, endTime);
+        if (intervals.length % 2 !== 0) {
+            intervals.push(endTime);
+        } else {
+            this.hasEndTime = true;
+        }
+        this.intervals = format(intervals);
     }
     
     include(time) {

@@ -3,6 +3,8 @@
     "target": "ESNext",
     "strictPropertyInitialization": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "baseUrl": "./",
+    "moduleResolution": "Classic"
   }
 }
