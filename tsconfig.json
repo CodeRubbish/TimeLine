@@ -4,7 +4,10 @@
     "strictPropertyInitialization": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": "./",
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"]
+    },
     "moduleResolution": "Classic"
   }
 }

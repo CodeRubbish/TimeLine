@@ -18,11 +18,10 @@ export class TimeLine extends LifeCycle {
     private _progress;// 播放进度
     private _duration = 0;
     private _allTaskList: Map<Task , Interval> = new Map();
-    private _useTaskList: Map<Task , number> = new Map();
     private _isSetDuration; // 是否手动设置了duration
     
     public speed = 1; // 播放速度，更改此项会影响时间线内所有的任务
-    public autoStart = false;
+    public autoStart = true;
     
     private set duration( value ) {
         this._duration = value;
@@ -60,18 +59,22 @@ export class TimeLine extends LifeCycle {
             if ( !this.isInitial() || !this.autoStart ) return;
             this.start( time );
         }
-        const { _useTaskList , _allTaskList , _startTimeStamp , duration , speed } = this;
+        const { _allTaskList , _startTimeStamp , duration } = this;
         const durationTime = time - _startTimeStamp;
-        if ( durationTime > duration ) this.end();
+        if ( durationTime >= duration ) this.stop();
+        console.log( '-------' + durationTime + '---------' );
         // 遍历当前的任务栈，找出当前时间点应该运行的任务
-        _useTaskList.clear();
         _allTaskList.forEach( ( interval , task ) => {
+            const d = interval.getTime( durationTime ); // 任务实际经过时间
             if ( interval.include( durationTime ) ) {
-                _useTaskList.set( task , interval.getTime( durationTime ) );
+                if ( task.isPause() ) {
+                    task.resume();
+                }
+                task.update( d , deltaTime );
             }
+            if ( interval.overTime( durationTime ) && !task.isStop() ) task.stop();
+            if ( interval.inPaused( durationTime ) && task.isRunning() ) task.pause();
         } );
-        // 运行每个任务，结束执行回调函数
-        _useTaskList.forEach( ( value , task ) => task.update( value / speed , deltaTime / speed ) );
     }
     
     public _destroy( ...arg: any[] ): void {
@@ -107,12 +110,13 @@ const obj2 = {
         console.log( this.name , time );
     }
 };
-timeLine.add( obj1 as any , [ 0 , 100 , 200 , 500 ] );
+timeLine.add( obj1 as any , [ 0 , 100 , 400 , 500 ] );
 timeLine.add( <any> obj2 , [ 200 , 400 ] );
 
 let timestamp = 0;
 timeLine.autoStart = true;
-setInterval( () => {
-    timestamp += 100;
-    timeLine.update( timestamp , 100 );
-} , 100 );
+let kk = setInterval( () => {
+    timestamp += 16;
+    timeLine.update( timestamp , 16 );
+} , 16 );
+timeLine.onStop( () => clearInterval( kk ) );

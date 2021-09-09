@@ -27,29 +27,47 @@ const getTime = (time, intervals) => {
 
 export class Interval {
     private hasEndTime;
-    private readonly intervals:[number,number][];
+    private readonly intervals: [ number , number ][];
     
-    constructor(intervals, endTime) {
-        if (intervals.length % 2 !== 0) {
-            intervals.push(endTime);
+    constructor( intervals , endTime ) {
+        if ( intervals.length % 2 !== 0 ) {
+            intervals.push( endTime );
         } else {
             this.hasEndTime = true;
         }
-        this.intervals = format(intervals);
+        this.intervals = format( intervals );
     }
     
-    include(time) {
-        return this.intervals.some(([start, end]) => time >= start && time <= end);
+    include( time ) {
+        return this.intervals.some( ( [ start , end ] ) => time >= start && time <= end );
     }
     
-    getTime(durationTime) {
-        return getTime(durationTime, this.intervals);
+    getTime( durationTime ) {
+        return getTime( durationTime , this.intervals );
     }
     
-    setEndTime(time) {
-        const {hasEndTime,intervals} = this;
-        if (!hasEndTime) {
-            intervals[intervals.length - 1][1] = time;
+    // 是否超过时间
+    overTime( time ) {
+        const { intervals } = this;
+        return intervals[ intervals.length - 1 ][ 1 ] <= time;
+    }
+    
+    // 是否在暂停时间
+    inPaused( time ) {
+        const { intervals } = this;
+        const last = intervals.length - 1;
+        if ( intervals.length === 1 ) {return false;}
+        return intervals.some(
+            ( value , index , arr ) =>
+                index === last ? false : value[ 1 ] <= time && time < arr[ index + 1 ][ 0 ]
+        );
+    }
+    
+    setEndTime( time ) {
+        const { hasEndTime , intervals } = this;
+        if ( !hasEndTime ) {
+            intervals[ intervals.length - 1 ][ 1 ] = time;
         }
     }
 }
+
