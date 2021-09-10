@@ -28,7 +28,7 @@ describe( 'interval test' , () => {
         interv.setEndTime( 400 );
         expect( interv.endTime ).toBe( 400 );
         interv.setEndTime( 300 );
-        expect( interv.include( 300 ) ).toBe( true );
+        expect( interv.include( 300 ) ).toBe( false );
         expect( interv.include( 299 ) ).toBe( false );
         expect( interv.include( 301 ) ).toBe( false );
         interv.setEndTime( 250 );

@@ -4,7 +4,7 @@ const format = ( arr , endTime ) => {
     if ( useArr.length % 2 !== 0 ) useArr.push( endTime );
     let i = 0;
     while ( i < useArr.length ) {
-        if ( useArr[ i ] > useArr[ i + 1 ] ) {
+        if ( useArr[ i ] >= useArr[ i + 1 ] ) {
             i = Infinity;
             break;
         }
@@ -41,6 +41,7 @@ export class Interval {
             this.hasEndTime = true;
         }
         this._initIntervals = intervals.slice();
+        Object.freeze( this.intervals );
         this.intervals = format( intervals , endTime );
     }
     
@@ -83,13 +84,9 @@ export class Interval {
     }
     
     setEndTime( time ) {
-        const { hasEndTime , intervals } = this;
+        const { hasEndTime } = this;
         if ( !hasEndTime ) {
-            const endTime = intervals[ intervals.length - 1 ][ 1 ];
-            if ( endTime <= time ) intervals[ intervals.length - 1 ][ 1 ] = time;
-            else {
-                this.intervals = format( this._initIntervals , time );
-            }
+            this.intervals = format( this._initIntervals , time );
         }
     }
 }

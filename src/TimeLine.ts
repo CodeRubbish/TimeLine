@@ -126,8 +126,8 @@ const obj2 = {
         console.log( this.name + ' update' , time );
     }
 };
-timeLine.add( obj1 as any , [ 0 , 100 , 300 , 500 ] );
-timeLine.add( <any> obj2 , [ 200 , 400 ] );
+//timeLine.add( obj1 as any , [ 0 , 100 , 300 , 500 ] );
+timeLine.add( <any> obj2 , [ 100 , 231 ] );
 
 let timestamp = 0;
 timeLine.autoStart = true;
