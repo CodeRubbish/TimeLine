@@ -38,6 +38,11 @@ export class Interval {
         this.intervals = format( intervals );
     }
     
+    get endTime() {
+        const { intervals } = this;
+        return intervals[ intervals.length - 1 ][ 1 ];
+    }
+    
     include( time ) {
         return this.intervals.some( ( [ start , end ] ) => time >= start && time <= end );
     }
@@ -54,13 +59,21 @@ export class Interval {
     
     // 是否在暂停时间
     inPaused( time ) {
+        let pauseTime;
         const { intervals } = this;
         const last = intervals.length - 1;
         if ( intervals.length === 1 ) {return false;}
-        return intervals.some(
-            ( value , index , arr ) =>
-                index === last ? false : value[ 1 ] <= time && time < arr[ index + 1 ][ 0 ]
+        intervals.some(
+            ( value , index , arr ) => {
+                if ( index === last ) {
+                    return false;
+                } else if ( value[ 1 ] <= time && time < arr[ index + 1 ][ 0 ] ) {
+                    pauseTime = value[ 1 ];
+                    return true;
+                }
+            }
         );
+        return pauseTime;
     }
     
     setEndTime( time ) {

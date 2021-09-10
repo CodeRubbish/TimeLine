@@ -9,7 +9,6 @@ import { Interval }  from "./Interval";
  * 设置区间[100]代表任务从100ms开始运行到时间线结束
  * 设置区间[0,1000]代表任务从100ms开始运行到1000ms
  * 若时间线时长不够，会对所有任务产生截断效果
- * 默认任务的起始时间和结束时间与时间线时长保持一致。
  * 在未手动设置时间线时长的时候，时间线时长以最长的任务为准
  */
 export class TimeLine extends LifeCycle {
@@ -19,7 +18,7 @@ export class TimeLine extends LifeCycle {
     private _duration = 0;
     private _allTaskList: Map<Task , Interval> = new Map();
     private _isSetDuration; // 是否手动设置了duration
-    
+    private _preUpdateTime // 上一次更新的时间
     public speed = 1; // 播放速度，更改此项会影响时间线内所有的任务
     public autoStart = true;
     
@@ -49,35 +48,52 @@ export class TimeLine extends LifeCycle {
     }
     
     protected _end( ...arg: any[] ): void {
+        this.update( Infinity , Infinity );
     }
     
     protected _stop( ...arg: any[] ): void {
     }
     
-    public _update( time , deltaTime ): void {
+    public _update( time ): void {
         if ( !this.isRunning() ) {
             if ( !this.isInitial() || !this.autoStart ) return;
             this.start( time );
         }
+        const deltaTime = this._preUpdateTime ? time - this._preUpdateTime : 0;
+        this._preUpdateTime = time;
         const { _allTaskList , _startTimeStamp , duration } = this;
-        const durationTime = time - _startTimeStamp;
-        if ( durationTime >= duration ) this.stop();
+        let durationTime = time - _startTimeStamp;
+        if ( durationTime >= duration ) {
+            durationTime = duration;
+            this.stop();
+        }
         console.log( '-------' + durationTime + '---------' );
         // 遍历当前的任务栈，找出当前时间点应该运行的任务
         _allTaskList.forEach( ( interval , task ) => {
+            let updateTag = false;
             const d = interval.getTime( durationTime ); // 任务实际经过时间
             if ( interval.include( durationTime ) ) {
                 if ( task.isPause() ) {
                     task.resume();
                 }
+                updateTag = true;
                 task.update( d , deltaTime );
             }
-            if ( interval.overTime( durationTime ) && !task.isStop() ) task.stop();
-            if ( interval.inPaused( durationTime ) && task.isRunning() ) task.pause();
+            if ( interval.overTime( durationTime ) && !task.isStop() ) {
+                if ( updateTag === false ) task.update( interval.endTime );
+                task.stop();
+            } else {
+                const pauseTime = interval.inPaused( durationTime );
+                if ( pauseTime && task.isRunning() ) {
+                    if ( updateTag === false ) task.update( pauseTime );
+                    task.pause();
+                }
+            }
         } );
     }
     
     public _destroy( ...arg: any[] ): void {
+    
     }
     
     /**
@@ -101,16 +117,16 @@ const timeLine = new TimeLine();
 const obj1 = {
     name : 'task1' ,
     update : function ( time ) {
-        console.log( this.name , time );
+        console.log( this.name + ' update' , time );
     }
 };
 const obj2 = {
     name : 'task2' ,
     update : function ( time ) {
-        console.log( this.name , time );
+        console.log( this.name + ' update' , time );
     }
 };
-timeLine.add( obj1 as any , [ 0 , 100 , 400 , 500 ] );
+timeLine.add( obj1 as any , [ 0 , 100 , 300 , 500 ] );
 timeLine.add( <any> obj2 , [ 200 , 400 ] );
 
 let timestamp = 0;
