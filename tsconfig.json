@@ -6,8 +6,11 @@
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["src/*"]
+      "src/*": [
+        "src/*"
+      ]
     },
+    "esModuleInterop": true,
     "moduleResolution": "Classic"
   }
 }

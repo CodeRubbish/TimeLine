@@ -48,7 +48,7 @@ export class TimeLine extends LifeCycle {
     }
     
     protected _end( ...arg: any[] ): void {
-        this.update( Infinity , Infinity );
+        this.update( Infinity );
     }
     
     protected _stop( ...arg: any[] ): void {
@@ -97,7 +97,7 @@ export class TimeLine extends LifeCycle {
     }
     
     /**
-     *
+     * 添加任务项
      * @param task
      * @param intervals
      */
