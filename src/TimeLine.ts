@@ -2,6 +2,7 @@ import { LifeCycle } from "./LifeCycle";
 import { Task }      from "./Task";
 import { Interval }  from "./Interval";
 
+type CallBack = ( ...arg ) => void;
 /**
  * 可以添加多个任务，分别起始于不同的时间点，任务的开始，暂停等状态由时间线控制
  * 任务可以具有不同的区间，可以在100ms时候启动，200ms暂停，500ms启动，直到1000ms播放完成，
@@ -14,11 +15,12 @@ import { Interval }  from "./Interval";
 export class TimeLine extends LifeCycle {
     private _startTimeStamp; // 内部调用，开始时间
     private _endTimeStamp; // 内部使用，结束时间，根据_startTimeStamp和_duration计算出
-    private _progress;// 播放进度
+    private _pauseTimeStamp; // 暂停时候的时间
     private _duration = 0;
     private _allTaskList: Map<Task , Interval> = new Map();
     private _isSetDuration; // 是否手动设置了duration
-    private _preUpdateTime // 上一次更新的时间
+    private _preUpdateTime; // 上一次更新的时间
+    private _onProgressCallBack: CallBack;
     public speed = 1; // 播放速度，更改此项会影响时间线内所有的任务
     public autoStart = true;
     
@@ -41,17 +43,21 @@ export class TimeLine extends LifeCycle {
         this._startTimeStamp = timestamp;
     }
     
-    protected _pause( ...arg: any[] ): void {
+    protected _pause( timestamp ): void {
+        this._pauseTimeStamp = timestamp;
     }
     
-    protected _resume( ...arg: any[] ): void {
+    protected _resume( timestamp: number ): void {
+        this._startTimeStamp += timestamp - this._pauseTimeStamp;
     }
     
     protected _end( ...arg: any[] ): void {
         this.update( Infinity );
+        this.stop();
     }
     
     protected _stop( ...arg: any[] ): void {
+        this._allTaskList.forEach( ( interval , task ) => task.stop() );
     }
     
     public _update( time ): void {
@@ -59,9 +65,9 @@ export class TimeLine extends LifeCycle {
             if ( !this.isInitial() || !this.autoStart ) return;
             this.start( time );
         }
-        const deltaTime = this._preUpdateTime ? time - this._preUpdateTime : 0;
+        const { _allTaskList , _startTimeStamp , duration , _preUpdateTime , speed } = this;
+        const deltaTime = _preUpdateTime ? time - _preUpdateTime : 0;
         this._preUpdateTime = time;
-        const { _allTaskList , _startTimeStamp , duration } = this;
         let durationTime = time - _startTimeStamp;
         if ( durationTime >= duration ) {
             durationTime = duration;
@@ -91,10 +97,13 @@ export class TimeLine extends LifeCycle {
         if ( durationTime >= duration ) {
             this.stop();
         }
+        this._onProgressCallBack && this._onProgressCallBack( 100 * durationTime / this.duration );
     }
     
     public _destroy( ...arg: any[] ): void {
-    
+        this._allTaskList.forEach( ( intev , task ) => {
+            task.destroy();
+        } );
     }
     
     /**
@@ -102,38 +111,17 @@ export class TimeLine extends LifeCycle {
      * @param task
      * @param intervals
      */
-    add( task: object , intervals: number[] ) {
+    public add( task: Task , intervals: number[] ) {
         if ( !this._isSetDuration ) {
             const end = intervals[ intervals.length - 1 ];
             if ( end > this.duration ) {
                 this.duration = end;
             }
         }
-        this._allTaskList.set( new Task( task ) , new Interval( intervals , this.duration ) );
+        this._allTaskList.set( task , new Interval( intervals , this.duration ) );
     }
     
+    public onProgress( func: CallBack ) {
+        this._onProgressCallBack = func;
+    };
 }
-
-const timeLine = new TimeLine();
-const obj1 = {
-    name : 'task1' ,
-    update : function ( time ) {
-        console.log( this.name + ' update' , time );
-    }
-};
-const obj2 = {
-    name : 'task2' ,
-    update : function ( time ) {
-        console.log( this.name + ' update' , time );
-    }
-};
-//timeLine.add( obj1 as any , [ 0 , 100 , 300 , 500 ] );
-timeLine.add( <any> obj2 , [ 100 , 300 ] );
-
-let timestamp = 0;
-timeLine.autoStart = true;
-let kk = setInterval( () => {
-    timestamp += 16;
-    timeLine.update( timestamp , 16 );
-} , 16 );
-timeLine.onStop( () => clearInterval( kk ) );
