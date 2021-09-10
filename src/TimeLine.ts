@@ -65,9 +65,7 @@ export class TimeLine extends LifeCycle {
         let durationTime = time - _startTimeStamp;
         if ( durationTime >= duration ) {
             durationTime = duration;
-            this.stop();
         }
-        console.log( '-------' + durationTime + '---------' );
         // 遍历当前的任务栈，找出当前时间点应该运行的任务
         _allTaskList.forEach( ( interval , task ) => {
             let updateTag = false;
@@ -90,6 +88,9 @@ export class TimeLine extends LifeCycle {
                 }
             }
         } );
+        if ( durationTime >= duration ) {
+            this.stop();
+        }
     }
     
     public _destroy( ...arg: any[] ): void {
@@ -127,7 +128,7 @@ const obj2 = {
     }
 };
 //timeLine.add( obj1 as any , [ 0 , 100 , 300 , 500 ] );
-timeLine.add( <any> obj2 , [ 100 , 231 ] );
+timeLine.add( <any> obj2 , [ 100 , 300 ] );
 
 let timestamp = 0;
 timeLine.autoStart = true;
