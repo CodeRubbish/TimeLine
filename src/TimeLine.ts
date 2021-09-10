@@ -16,7 +16,7 @@ export class TimeLine extends LifeCycle {
     private _startTimeStamp; // 内部调用，开始时间
     private _endTimeStamp; // 内部使用，结束时间，根据_startTimeStamp和_duration计算出
     private _pauseTimeStamp; // 暂停时候的时间
-    private _duration = 0;
+    private _duration = 100;
     private _allTaskList: Map<Task , Interval> = new Map();
     private _isSetDuration; // 是否手动设置了duration
     private _preUpdateTime; // 上一次更新的时间
