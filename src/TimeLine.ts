@@ -81,7 +81,7 @@ export class TimeLine extends LifeCycle {
                     task.resume();
                 }
                 updateTag = true;
-                task.update( d , deltaTime );
+                task.update( d / speed , deltaTime / speed );
             }
             if ( interval.overTime( durationTime ) && !task.isStop() ) {
                 if ( updateTag === false ) task.update( interval.endTime );
