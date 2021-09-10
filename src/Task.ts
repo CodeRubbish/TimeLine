@@ -18,22 +18,18 @@ export class Task extends LifeCycle {
     }
     
     protected _resume( ...arg ): void {
-        console.log( `${ this._runTask.name } resume` );
         this._runTask.resume && this._runTask.resume.apply( this._runTask , arg );
     }
     
     protected _pause( ...arg ): void {
-        console.log( `${ this._runTask.name } paused` );
         this._runTask.pause && this._runTask.pause.apply( this._runTask , arg );
     }
     
     protected _end( ...arg ): void {
-        console.log( `${ this._runTask.name } end` );
         this._runTask.end && this._runTask.end.apply( this._runTask , arg );
     }
     
     protected _stop( ...arg ): void {
-        console.log( `${ this._runTask.name } stop` );
         this._runTask.stop && this._runTask.stop.apply( this._runTask , arg );
     }
     
